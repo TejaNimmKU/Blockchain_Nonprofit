@@ -8,9 +8,10 @@ function Register({ setCurrentPage, setRole }) {
     const [walletConnected, setWalletConnected] = useState(false);
     const [walletAddress, setWalletAddress] = useState('');
     const [authData, setAuthData] = useState(null);
-    const [role, setRoleState] = useState('student');
+    const [role, setRoleState] = useState('nonprofit');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [org, setOrg] = useState('');
     const [permissionCode, setPermissionCode] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
@@ -111,6 +112,10 @@ function Register({ setCurrentPage, setRole }) {
     }, [email]);
 
     useEffect(() => {
+        console.log('organization changed:', org);
+    }, [org]);
+
+    useEffect(() => {
         console.log('permissionCode changed:', permissionCode);
     }, [permissionCode]);
 
@@ -127,9 +132,8 @@ function Register({ setCurrentPage, setRole }) {
             {walletConnected && (
                 <>
                     <select value={role} onChange={(e) => setRoleState(e.target.value)}>
-                        <option value='student'>Student</option>
-                        <option value='college'>College</option>
-                        <option value='company'>Company</option>
+                        <option value='nonprofit'>Nonprofit</option>
+                        <option value='dao'>DAO</option>
                     </select>
                     <input
                         type='text'
@@ -143,7 +147,15 @@ function Register({ setCurrentPage, setRole }) {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                     />
-                    {(role === 'college' || role === 'company') && (
+                    {(role === 'nonprofit') && (
+                        <input
+                            type='text'
+                            placeholder='Organization Name'
+                            value={org}
+                            onChange={(e) => setOrg(e.target.value)}
+                        />
+                    )}
+                    {(role === 'DAO') && (
                         <input
                             type='text'
                             placeholder='Permission Code'
