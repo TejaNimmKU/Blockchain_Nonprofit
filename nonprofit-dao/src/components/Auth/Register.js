@@ -1,174 +1,85 @@
 import React, { useState, useEffect } from 'react';
-import Web3 from 'web3';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import { signMessage } from './SignMessage'; // Import the signMessage function
+import { ethers } from 'ethers';
+import nftContractAbi from '../../abis/contractABI.json'; // ABI of your NFT contract
 
-function Register({ setCurrentPage, setRole }) {
-    const [walletConnected, setWalletConnected] = useState(false);
-    const [walletAddress, setWalletAddress] = useState('');
-    const [authData, setAuthData] = useState(null);
-    const [role, setRoleState] = useState('nonprofit');
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [org, setOrg] = useState('');
-    const [permissionCode, setPermissionCode] = useState('');
-    const [error, setError] = useState('');
-    const navigate = useNavigate();
+const NFT_CONTRACT_ADDRESS = process.env.REACT_APP_CONTRACT_ADDRESS_NFT;
 
-    const VALID_PERMISSION_CODE = '100';
+const Register = ({ onMint }) => {
+  const [name, setName] = useState('');
+  const [role, setRole] = useState('');
+  const [organization, setOrganization] = useState('');
+  const [email, setEmail] = useState('');
+  const [account, setAccount] = useState(null);
 
-    const connectWallet = async () => {
-        if (window.ethereum) {
-            try {
-                const web3 = new Web3(window.ethereum);
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                setWalletAddress(accounts[0]);
-                setWalletConnected(true);
-
-                const messageResponse = await axios.post('http://localhost:3002/auth/request-message', {
-                    address: accounts[0],
-                    chain: '0x1',
-                    networkType: 'evm',
-                });
-
-                const message = messageResponse.data.message;
-                const signature = await signMessage(message, accounts[0]);
-
-                const authResponse = await axios.post('http://localhost:3002/auth/get-auth-data', {
-                    networkType: "evm",
-                    message,
-                    signature,
-                });
-
-                setAuthData(authResponse.data.authData);
-            } catch (err) {
-                setError('An error occurred while connecting to the wallet.');
-                console.error(err);
-            }
-        } else {
-            setError('MetaMask is not installed.');
-        }
-    };
-
-    const handleRegister = async () => {
-        if (!authData) {
-            setError('Please connect your wallet first.');
-            return;
-        }
-
-        if ((role === 'college' || role === 'company') && permissionCode !== VALID_PERMISSION_CODE) {
-            setError('Invalid permission code.');
-            return;
-        }
-
+  useEffect(() => {
+    const connectMetaMask = async () => {
+      if (window.ethereum) {
         try {
-            const registerResponse = await axios.post('http://localhost:3002/auth/register', {
-                authData,
-                role,
-                name,
-                email,
-            });
-
-            setRole(registerResponse.data.user.role);
-            localStorage.setItem('token', registerResponse.data.token);
-            setCurrentPage(`${registerResponse.data.user.role}Dashboard`);
-        } catch (err) {
-            if (err.response && err.response.data) {
-                if (err.response.data.error === 'User with this account already exists.') {
-                    setError('A user with this account already exists. Please use a different account.');
-                } else {
-                    setError('An error occurred during the registration process.');
-                }
-            } else {
-                setError('An error occurred during the registration process.');
-            }
-            console.error('An error occurred during the registration process.', err);
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          setAccount(accounts[0]);
+        } catch (error) {
+          console.error('MetaMask connection error', error);
         }
+      } else {
+        console.error('MetaMask not detected');
+      }
     };
 
-    useEffect(() => {
-        console.log('walletConnected changed:', walletConnected);
-    }, [walletConnected]);
+    connectMetaMask();
+  }, []);
 
-    useEffect(() => {
-        console.log('walletAddress changed:', walletAddress);
-    }, [walletAddress]);
+  const handleRegister = async () => {
+    if (!account) {
+      console.error('MetaMask not connected');
+      return;
+    }
 
-    useEffect(() => {
-        console.log('authData changed:', authData);
-    }, [authData]);
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    const contract = new ethers.Contract(NFT_CONTRACT_ADDRESS, nftContractAbi, signer);
 
-    useEffect(() => {
-        console.log('role changed:', role);
-    }, [role]);
+    const metadata = {
+      name,
+      role,
+      organization,
+      email,
+    };
 
-    useEffect(() => {
-        console.log('name changed:', name);
-    }, [name]);
+    // Store metadata on IPFS
+    const response = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.REACT_APP_PINATA_JWT}`,
+      },
+      body: JSON.stringify(metadata),
+    });
 
-    useEffect(() => {
-        console.log('email changed:', email);
-    }, [email]);
+    const data = await response.json();
+    const tokenURI = `https://gateway.pinata.cloud/ipfs/${data.IpfsHash}`;
 
-    useEffect(() => {
-        console.log('organization changed:', org);
-    }, [org]);
-
-    useEffect(() => {
-        console.log('permissionCode changed:', permissionCode);
-    }, [permissionCode]);
-
-    useEffect(() => {
-        console.log('error changed:', error);
-    }, [error]);
-
-    return (
-        <div className='Register'>
-            <h1>Register</h1>
-            <button onClick={connectWallet}>
-                {walletConnected ? `Wallet Connected: ${walletAddress}` : 'Connect Wallet'}
-            </button>
-            {walletConnected && (
-                <>
-                    <select value={role} onChange={(e) => setRoleState(e.target.value)}>
-                        <option value='nonprofit'>Nonprofit</option>
-                        <option value='dao'>DAO</option>
-                    </select>
-                    <input
-                        type='text'
-                        placeholder='Name'
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                    />
-                    <input
-                        type='email'
-                        placeholder='Email'
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                    />
-                    {(role === 'nonprofit') && (
-                        <input
-                            type='text'
-                            placeholder='Organization Name'
-                            value={org}
-                            onChange={(e) => setOrg(e.target.value)}
-                        />
-                    )}
-                    {(role === 'DAO') && (
-                        <input
-                            type='text'
-                            placeholder='Permission Code'
-                            value={permissionCode}
-                            onChange={(e) => setPermissionCode(e.target.value)}
-                        />
-                    )}
-                    <button onClick={handleRegister}>Register</button>
-                </>
-            )}
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-        </div>
+    // Mint the NFT with the tokenURI and user information
+    await contract.mintNFT(
+      account,
+      tokenURI,
+      name,
+      role,
+      organization,
+      email
     );
-}
+
+    onMint();
+  };
+
+  return (
+    <div>
+      <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+      <input type="text" placeholder="Role" value={role} onChange={(e) => setRole(e.target.value)} />
+      <input type="text" placeholder="Organization" value={organization} onChange={(e) => setOrganization(e.target.value)} />
+      <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <button onClick={handleRegister}>Register and Mint NFT</button>
+    </div>
+  );
+};
 
 export default Register;

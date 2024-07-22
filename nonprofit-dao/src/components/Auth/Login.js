@@ -24,11 +24,11 @@ function Login({ setRole }) {
                 await connectWallet();
             }
 
-            if (currentChainId !== "0x13882") {
-                await addPolygonAmoyNetwork();
-                setError("Please switch MetaMask network to Polygon Amoy Testnet.");
-                return;
-            }
+            // if (currentChainId !== "0x13882") {
+            //     await addPolygonAmoyNetwork();
+            //     setError("Please switch MetaMask network to Polygon Amoy Testnet.");
+            //     return;
+            // }
 
             const web3 = new Web3(window.ethereum);
             const accounts = await web3.eth.getAccounts();
