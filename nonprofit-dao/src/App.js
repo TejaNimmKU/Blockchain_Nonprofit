@@ -7,6 +7,7 @@ import NonprofitDashboard from './components/Dashboards/NonprofitDashboard';
 import Register from './components/Auth/Register';
 import { ethers } from 'ethers';
 import nftContractAbi from './abis/contractABI.json'; // ABI of your NFT contract
+import './assets/styles/App.css';
 console.log(nftContractAbi);
 
 //const { ethers } = require("ethers");

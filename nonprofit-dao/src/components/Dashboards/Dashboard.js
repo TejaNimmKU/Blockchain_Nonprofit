@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import NonprofitDashboard from './NonprofitDashboard';
-import DAOadminDashboard from '/Users/tejanimmagadda/Downloads/Blockchain_Nonprofit/nonprofit-dao/src/components/Dashboards/DaoAdminDashboard.js';
+import DAOadminDashboard from './DaoAdminDashboard';
 
 function Dashboard() {
     const navigate = useNavigate();

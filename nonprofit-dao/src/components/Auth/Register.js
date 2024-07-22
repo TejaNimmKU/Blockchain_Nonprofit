@@ -1,3 +1,4 @@
+import '../../assets/styles/App.css';
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import nftContractAbi from '../../abis/contractABI.json'; // ABI of your NFT contract
