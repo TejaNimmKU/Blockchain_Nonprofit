@@ -1,4 +1,5 @@
 import React from 'react';
+import './../assets/styles/App.css'
 
 function HomePage({ setCurrentPage }) {
     return (

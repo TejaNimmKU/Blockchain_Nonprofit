@@ -1,0 +1,51 @@
+.DAODashboard {
+    padding: 20px;
+    background-image: url(./bg.jpg);
+}
+
+.task-board {
+    display: flex;
+    justify-content: space-between;
+}
+
+.column {
+    width: 30%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.column h2 {
+    text-align: center;
+}
+
+.task {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #fff;
+}
+
+.task h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.task p {
+    font-size: 14px;
+    margin: 5px 0;
+}
+
+.task button {
+    margin-right: 5px;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.task button:hover {
+    background-color: #ddd;
+}

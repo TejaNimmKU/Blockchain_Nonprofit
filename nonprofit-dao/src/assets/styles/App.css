@@ -5,7 +5,7 @@ body {
 }
 
 .register-container {
-  background-image: url('bg.jpg'); /* Correct path */
+  background-image: url(./bg.jpg); /* Correct path */
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
@@ -25,7 +25,7 @@ body {
   border: 1px solid #ccc;
   border-radius: 5px;
   text-align: center;
-  background-image: url('bg.jpg'); /* Correct path */
+  background-image: url(./bg.jpg); /* Correct path */
 }
 
 input,

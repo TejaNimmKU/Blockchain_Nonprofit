@@ -1,7 +1,7 @@
 import '../../assets/styles/App.css';
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import nftContractAbi from '../../abis/contractABI.json'; // ABI of your NFT contract
+import nftContractAbi from '../../abis/contractABI'; // ABI of your NFT contract
 
 const NFT_CONTRACT_ADDRESS = process.env.REACT_APP_CONTRACT_ADDRESS_NFT;
 
@@ -37,7 +37,7 @@ const Register = ({ onMint }) => {
 
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
-    const contract = new ethers.Contract(NFT_CONTRACT_ADDRESS, nftContractAbi, signer);
+    const contract = new ethers.Contract(NFT_CONTRACT_ADDRESS, nftContractAbi.abi, signer);
 
     const metadata = {
       name,

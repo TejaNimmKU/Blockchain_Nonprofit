@@ -1,0 +1,120 @@
+.NonprofitDashboard {
+    padding: 20px;
+    position: relative;
+}
+
+.request-button {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.request-button:hover {
+    background-color: #45a049;
+}
+
+.request-board {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.column {
+    width: 30%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.column h2 {
+    text-align: center;
+}
+
+.request {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #fff;
+}
+
+.request h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.request p {
+    font-size: 14px;
+    margin: 5px 0;
+}
+
+.popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.popup-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    width: 50%;
+    max-width: 500px;
+}
+
+.popup-content h2 {
+    margin-top: 0;
+}
+
+.popup-content form {
+    display: flex;
+    flex-direction: column;
+}
+
+.popup-content form label {
+    margin-bottom: 10px;
+}
+
+.popup-content form input[type="text"],
+.popup-content form input[type="number"],
+.popup-content form input[type="file"] {
+    padding: 5px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.popup-content form button {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.popup-content form button:hover {
+    background-color: #45a049;
+}
+
+.popup-content form button[type="button"] {
+    background-color: #f44336;
+}
+
+.popup-content form button[type="button"]:hover {
+    background-color: #e53935;
+}
