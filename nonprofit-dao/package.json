@@ -12,6 +12,8 @@
     "bootstrap": "^5.3.3",
     "dotenv": "^16.4.5",
     "ethers": "^5.7.2",
+    "fs": "^0.0.1-security",
+    "ipfs-http-client": "^60.0.1",
     "jwt-decode": "^4.0.0",
     "react": "^18.3.1",
     "react-bootstrap": "^2.10.4",
