@@ -48,7 +48,7 @@ function NonprofitDashboard({ user }) {
             );
 
             const inProgressRequests = await Promise.all(
-                updatedRequests['In-Progress'].map(async (request) => ({
+                updatedRequests.InProgress.map(async (request) => ({
                     ...await fetchRequestData(request.CID),
                     CID: request.CID
                 }))
@@ -163,7 +163,9 @@ function NonprofitDashboard({ user }) {
     };
 
     const getRequestsByState = (state) => {
-        return requests[state] || [];
+        console.log(`Fetching requests for state: ${state}`);
+        console.log(requests[state]); // Debugging line
+        return Array.isArray(requests[state]) ? requests[state] : [];
     };
 
     return (

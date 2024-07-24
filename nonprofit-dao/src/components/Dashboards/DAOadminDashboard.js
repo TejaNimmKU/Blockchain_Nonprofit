@@ -30,71 +30,77 @@ function DAODashboard({ user }) {
             Denied: []
         };
 
-        const fetchAllRequests = async () => {
-            const fetchRequests = async (state) => {
+        const fetchAllRequests = async (state) => {
+            if (Array.isArray(localData[state])) {
                 const cids = localData[state].map(request => request.CID);
                 const requests = await Promise.all(cids.map(cid => fetchRequestFromIPFS(cid)));
                 return requests.filter(request => request !== null);
-            };
-
-            const sentRequests = await fetchRequests('Sent');
-            const inProgressRequests = await fetchRequests('In-Progress');
-            const approvedRequests = await fetchRequests('Approved');
-            const deniedRequests = await fetchRequests('Denied');
-
-            setRequestsData({
-                Sent: sentRequests,
-                InProgress: inProgressRequests,
-                Approved: approvedRequests,
-                Denied: deniedRequests
-            });
+            }
+            return [];
         };
 
-        fetchAllRequests();
+        const sentRequests = await fetchAllRequests('Sent');
+        const inProgressRequests = await fetchAllRequests('InProgress');
+        const approvedRequests = await fetchAllRequests('Approved');
+        const deniedRequests = await fetchAllRequests('Denied');
+
+        setRequestsData({
+            Sent: sentRequests,
+            InProgress: inProgressRequests,
+            Approved: approvedRequests,
+            Denied: deniedRequests
+        });
     }, []);
 
     useEffect(() => {
         loadRequests();
     }, [loadRequests]);
 
-    const updateRequestState = async (cid, newState) => {
-        try {
-            const request = requestsData.Sent.find(req => req.cid === cid) || 
-                            requestsData.InProgress.find(req => req.cid === cid) || 
-                            requestsData.Approved.find(req => req.cid === cid) || 
-                            requestsData.Denied.find(req => req.cid === cid);
-
-            if (!request) return;
-
-            const updatedRequest = { ...request, state: newState };
-            const res = await axios.post('https://api.pinata.cloud/pinning/pinJSONToIPFS', updatedRequest, {
-                headers: {
-                    Authorization: `Bearer ${pinataJWT}`
-                }
-            });
-
-            const updatedCIDs = JSON.parse(localStorage.getItem('requestCIDs')) || [];
-            const newRequestCID = res.data.IpfsHash;
-            const index = updatedCIDs.indexOf(cid);
-            if (index !== -1) {
-                updatedCIDs[index] = newRequestCID;
+    const updateRequestInLocalStorage = (cid, action) => {
+        const requestsData = JSON.parse(localStorage.getItem('requestsData')) || {
+            Sent: [],
+            InProgress: [],
+            Approved: [],
+            Denied: []
+        };
+    
+        const updateList = (state) => {
+            if (Array.isArray(requestsData[state])) {
+                return requestsData[state].map(req => {
+                    if (req.CID === cid) {
+                        return {
+                            ...req,
+                            ["Approved By"]: action === 'approve' ? [...req["Approved By"], user.name] : req["Approved By"],
+                            ["Denied By"]: action === 'deny' ? [...req["Denied By"], user.name] : req["Denied By"]
+                        };
+                    }
+                    return req;
+                });
             }
-            localStorage.setItem('requestCIDs', JSON.stringify(updatedCIDs));
-
-            loadRequests();
-        } catch (error) {
-            console.error('Error updating request state:', error);
-        }
+            return [];
+        };
+    
+        const newRequestsData = {
+            Sent: updateList('Sent').filter(req => req.CID !== cid),
+            InProgress: [...requestsData.InProgress, ...updateList('Sent').filter(req => req.CID === cid)],
+            Approved: action === 'approve' ? [...requestsData.Approved, ...requestsData.InProgress.filter(req => req.CID === cid)] : requestsData.Approved,
+            Denied: action === 'deny' ? [...requestsData.Denied, ...requestsData.InProgress.filter(req => req.CID === cid)] : requestsData.Denied
+        };
+    
+        localStorage.setItem('requestsData', JSON.stringify(newRequestsData));
+    
+        loadRequests();
     };
+    
 
     const handleApprove = (cid) => {
         console.log(`Request ${cid} approved.`);
-        updateRequestState(cid, 'Approved');
+        updateRequestInLocalStorage(cid, 'approve');
     };
 
     const handleDeny = (cid) => {
         console.log(`Request ${cid} denied.`);
-        updateRequestState(cid, 'Denied');
+        updateRequestInLocalStorage(cid, 'deny');
     };
 
     const getRequestsByState = (state) => {
@@ -107,7 +113,7 @@ function DAODashboard({ user }) {
             <p>Welcome, {user.name}! This is your dashboard.</p>
             <div className="task-board">
                 <div className="column">
-                    <h2>Sent</h2>
+                    <h2>Awaiting Review</h2>
                     {getRequestsByState('Sent').map(request => (
                         <div key={request.cid} className="task">
                             <h3>Amount: {request.amount}</h3>

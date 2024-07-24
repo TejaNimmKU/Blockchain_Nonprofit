@@ -4,7 +4,7 @@ export const getRequestsData = () => {
     const data = localStorage.getItem('requestsData');
     return data ? JSON.parse(data) : {
         "Sent": [],
-        "In-Progress": [],
+        "InProgress": [],
         "Approved": [],
         "Denied": []
     };
