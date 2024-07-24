@@ -1,16 +1,19 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import './../../assets/styles/DAODashboard.css';
+import { getRequestsData, setRequestsData } from './localStorage';
 
 const pinataJWT = process.env.REACT_APP_PINATA_JWT;
 
 function DAODashboard({ user }) {
-    const [requestsData, setRequestsData] = useState({
+    const [requestsData, setRequestsDataState] = useState({
         Sent: [],
         InProgress: [],
         Approved: [],
         Denied: []
     });
+
+    const [ipfsData, setIpfsData] = useState({});
 
     const fetchRequestFromIPFS = async (cid) => {
         try {
@@ -23,33 +26,24 @@ function DAODashboard({ user }) {
     };
 
     const loadRequests = useCallback(async () => {
-        const localData = JSON.parse(localStorage.getItem('requestsData')) || {
-            Sent: [],
-            InProgress: [],
-            Approved: [],
-            Denied: []
-        };
+        const localData = getRequestsData();
+        const allRequests = ['Sent', 'InProgress', 'Approved', 'Denied'];
 
-        const fetchAllRequests = async (state) => {
-            if (Array.isArray(localData[state])) {
-                const cids = localData[state].map(request => request.CID);
-                const requests = await Promise.all(cids.map(cid => fetchRequestFromIPFS(cid)));
-                return requests.filter(request => request !== null);
+        let ipfsRequests = {};
+        for (let state of allRequests) {
+            const requests = localData[state] || [];
+            for (let request of requests) {
+                if (request.CID) {
+                    const ipfsRequest = await fetchRequestFromIPFS(request.CID);
+                    if (ipfsRequest) {
+                        ipfsRequests[request.CID] = ipfsRequest;
+                    }
+                }
             }
-            return [];
-        };
+        }
 
-        const sentRequests = await fetchAllRequests('Sent');
-        const inProgressRequests = await fetchAllRequests('InProgress');
-        const approvedRequests = await fetchAllRequests('Approved');
-        const deniedRequests = await fetchAllRequests('Denied');
-
-        setRequestsData({
-            Sent: sentRequests,
-            InProgress: inProgressRequests,
-            Approved: approvedRequests,
-            Denied: deniedRequests
-        });
+        setIpfsData(ipfsRequests);
+        setRequestsDataState(localData);
     }, []);
 
     useEffect(() => {
@@ -57,41 +51,31 @@ function DAODashboard({ user }) {
     }, [loadRequests]);
 
     const updateRequestInLocalStorage = (cid, action) => {
-        const requestsData = JSON.parse(localStorage.getItem('requestsData')) || {
-            Sent: [],
-            InProgress: [],
-            Approved: [],
-            Denied: []
-        };
-    
+        const localData = getRequestsData();
+
         const updateList = (state) => {
-            if (Array.isArray(requestsData[state])) {
-                return requestsData[state].map(req => {
-                    if (req.CID === cid) {
-                        return {
-                            ...req,
-                            ["Approved By"]: action === 'approve' ? [...req["Approved By"], user.name] : req["Approved By"],
-                            ["Denied By"]: action === 'deny' ? [...req["Denied By"], user.name] : req["Denied By"]
-                        };
-                    }
-                    return req;
-                });
-            }
-            return [];
+            return localData[state].map(req => {
+                if (req.CID === cid) {
+                    return {
+                        ...req,
+                        ["Approved By"]: action === 'approve' ? [...req["Approved By"], user.name] : req["Approved By"],
+                        ["Denied By"]: action === 'deny' ? [...req["Denied By"], user.name] : req["Denied By"]
+                    };
+                }
+                return req;
+            });
         };
-    
+
         const newRequestsData = {
             Sent: updateList('Sent').filter(req => req.CID !== cid),
-            InProgress: [...requestsData.InProgress, ...updateList('Sent').filter(req => req.CID === cid)],
-            Approved: action === 'approve' ? [...requestsData.Approved, ...requestsData.InProgress.filter(req => req.CID === cid)] : requestsData.Approved,
-            Denied: action === 'deny' ? [...requestsData.Denied, ...requestsData.InProgress.filter(req => req.CID === cid)] : requestsData.Denied
+            InProgress: [...localData.InProgress, ...updateList('Sent').filter(req => req.CID === cid)],
+            Approved: action === 'approve' ? [...localData.Approved, ...localData.InProgress.filter(req => req.CID === cid)] : localData.Approved,
+            Denied: action === 'deny' ? [...localData.Denied, ...localData.InProgress.filter(req => req.CID === cid)] : localData.Denied
         };
-    
-        localStorage.setItem('requestsData', JSON.stringify(newRequestsData));
-    
+
+        setRequestsData(newRequestsData);
         loadRequests();
     };
-    
 
     const handleApprove = (cid) => {
         console.log(`Request ${cid} approved.`);
@@ -104,7 +88,33 @@ function DAODashboard({ user }) {
     };
 
     const getRequestsByState = (state) => {
-        return requestsData[state] || [];
+        const localRequests = requestsData[state] || [];
+
+        if (state === 'Awaiting Review') {
+            const sentRequests = requestsData.Sent || [];
+            const inProgressRequests = (requestsData.InProgress || []).filter(request => {
+                const approvedBy = request["Approved By"] || [];
+                const deniedBy = request["Denied By"] || [];
+                return !approvedBy.includes(user.name) && !deniedBy.includes(user.name);
+            });
+            return [...sentRequests, ...inProgressRequests];
+        }
+
+        if (state === 'Needs Further Approval') {
+            return (requestsData.InProgress || []).filter(request => {
+                const approvedBy = request["Approved By"] || [];
+                const deniedBy = request["Denied By"] || [];
+                return approvedBy.includes(user.name) || deniedBy.includes(user.name);
+            });
+        }
+
+        return localRequests;
+    };
+
+    const combineRequestData = (request) => {
+        const cid = request.CID;
+        const ipfsRequest = ipfsData[cid] || {};
+        return { ...ipfsRequest, ...request };
     };
 
     return (
@@ -114,53 +124,65 @@ function DAODashboard({ user }) {
             <div className="task-board">
                 <div className="column">
                     <h2>Awaiting Review</h2>
-                    {getRequestsByState('Sent').map(request => (
-                        <div key={request.cid} className="task">
-                            <h3>Amount: {request.amount}</h3>
-                            <p>Vendor: {request.vendor}</p>
-                            <p>Uses: {request.uses}</p>
-                            <p>Vendor Wallet: {request.vendorWallet}</p>
-                            <p>Invoice CID: {request.invoiceCID}</p>
-                            <button onClick={() => handleApprove(request.cid)}>Approve</button>
-                            <button onClick={() => handleDeny(request.cid)}>Deny</button>
-                        </div>
-                    ))}
+                    {getRequestsByState('Awaiting Review').map(request => {
+                        const combinedRequest = combineRequestData(request);
+                        return (
+                            <div key={combinedRequest.cid} className="task">
+                                <h3>Amount: {combinedRequest.amount}</h3>
+                                <p>Vendor: {combinedRequest.vendor}</p>
+                                <p>Uses: {combinedRequest.uses}</p>
+                                <p>Vendor Wallet: {combinedRequest.vendorWallet}</p>
+                                <p>Invoice CID: {combinedRequest.invoiceCID}</p>
+                                <button onClick={() => handleApprove(combinedRequest.cid)}>Approve</button>
+                                <button onClick={() => handleDeny(combinedRequest.cid)}>Deny</button>
+                            </div>
+                        );
+                    })}
                 </div>
                 <div className="column">
                     <h2>Needs Further Approval</h2>
-                    {getRequestsByState('InProgress').map(request => (
-                        <div key={request.cid} className="task">
-                            <h3>Amount: {request.amount}</h3>
-                            <p>Vendor: {request.vendor}</p>
-                            <p>Uses: {request.uses}</p>
-                            <p>Vendor Wallet: {request.vendorWallet}</p>
-                            <p>Invoice CID: {request.invoiceCID}</p>
-                        </div>
-                    ))}
+                    {getRequestsByState('Needs Further Approval').map(request => {
+                        const combinedRequest = combineRequestData(request);
+                        return (
+                            <div key={combinedRequest.cid} className="task">
+                                <h3>Amount: {combinedRequest.amount}</h3>
+                                <p>Vendor: {combinedRequest.vendor}</p>
+                                <p>Uses: {combinedRequest.uses}</p>
+                                <p>Vendor Wallet: {combinedRequest.vendorWallet}</p>
+                                <p>Invoice CID: {combinedRequest.invoiceCID}</p>
+                            </div>
+                        );
+                    })}
                 </div>
                 <div className="column">
                     <h2>Approved</h2>
-                    {getRequestsByState('Approved').map(request => (
-                        <div key={request.cid} className="task">
-                            <h3>Amount: {request.amount}</h3>
-                            <p>Vendor: {request.vendor}</p>
-                            <p>Uses: {request.uses}</p>
-                            <p>Vendor Wallet: {request.vendorWallet}</p>
-                            <p>Invoice CID: {request.invoiceCID}</p>
-                        </div>
-                    ))}
+                    {getRequestsByState('Approved').map(request => {
+                        const combinedRequest = combineRequestData(request);
+                        return (
+                            <div key={combinedRequest.cid} className="task">
+                                <h3>Amount: {combinedRequest.amount}</h3>
+                                <p>Vendor: {combinedRequest.vendor}</p>
+                                <p>Uses: {combinedRequest.uses}</p>
+                                <p>Vendor Wallet: {combinedRequest.vendorWallet}</p>
+                                <p>Invoice CID: {combinedRequest.invoiceCID}</p>
+                            </div>
+                        );
+                    })}
                 </div>
                 <div className="column">
                     <h2>Denied</h2>
-                    {getRequestsByState('Denied').map(request => (
-                        <div key={request.cid} className="task">
-                            <h3>Amount: {request.amount}</h3>
-                            <p>Vendor: {request.vendor}</p>
-                            <p>Uses: {request.uses}</p>
-                            <p>Vendor Wallet: {request.vendorWallet}</p>
-                            <p>Invoice CID: {request.invoiceCID}</p>
-                        </div>
-                    ))}
+                    {getRequestsByState('Denied').map(request => {
+                        const combinedRequest = combineRequestData(request);
+                        return (
+                            <div key={combinedRequest.cid} className="task">
+                                <h3>Amount: {combinedRequest.amount}</h3>
+                                <p>Vendor: {combinedRequest.vendor}</p>
+                                <p>Uses: {combinedRequest.uses}</p>
+                                <p>Vendor Wallet: {combinedRequest.vendorWallet}</p>
+                                <p>Invoice CID: {combinedRequest.invoiceCID}</p>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         </div>
