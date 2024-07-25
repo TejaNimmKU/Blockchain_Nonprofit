@@ -1,6 +1,11 @@
 .NonprofitDashboard {
-    padding: 20px;
+    padding-top: 20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 500px;
+    background-image: url(./bg.jpg);
     position: relative;
+
 }
 
 .request-button {
@@ -8,7 +13,7 @@
     top: 20px;
     right: 20px;
     padding: 10px 20px;
-    background-color: #4CAF50;
+    background-color: #a528a7;
     color: white;
     border: none;
     border-radius: 5px;
@@ -16,7 +21,7 @@
 }
 
 .request-button:hover {
-    background-color: #45a049;
+    background-color: #74307f;
 }
 
 .request-board {

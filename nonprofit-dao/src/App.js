@@ -1,11 +1,9 @@
+// src/App.js
 import React, { useState } from 'react';
-import MetaMaskLogin from './components/MetaMaskLogin';
-import DAODashboard from './components/Dashboards/DaoAdminDashboard';
-import NonprofitDashboard from './components/Dashboards/NonprofitDashboard';
-import Register from './components/Auth/Register';
 import { ethers } from 'ethers';
 import nftContractAbi from './abis/contractABI'; // ABI of your NFT contract
-import './assets/styles/App.css';
+//import './assets/styles/App.css';
+import PageContent from './components/Auth/PageContent'; // Import the new component
 
 const NFT_CONTRACT_ADDRESS = process.env.REACT_APP_CONTRACT_ADDRESS_NFT;
 
@@ -57,20 +55,14 @@ const App = () => {
 
   return (
     <div className="App">
-      {!user ? (
-        <>
-          {isMinting ? (
-            <Register onMint={handleMint} />
-          ) : (
-            <MetaMaskLogin onLogin={handleLogin} />
-          )}
-          <button onClick={() => setIsMinting(true)}>Register and Mint NFT</button>
-        </>
-      ) : role === 'dao' ? (
-        <DAODashboard user={user} />
-      ) : (
-        <NonprofitDashboard user={user} />
-      )}
+      <PageContent 
+        user={user} 
+        role={role} 
+        isMinting={isMinting} 
+        handleMint={handleMint} 
+        handleLogin={handleLogin} 
+        setIsMinting={setIsMinting} 
+      />
     </div>
   );
 };

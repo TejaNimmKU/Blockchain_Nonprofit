@@ -170,8 +170,8 @@ function NonprofitDashboard({ user }) {
 
     return (
         <div className='NonprofitDashboard'>
-            <h1>Nonprofit Dashboard</h1>
-            <p>Welcome, {user.name}! This is your dashboard.</p>
+            <h1>Medical Miracle Makers Dashboard</h1>
+            <p>Welcome, {user.name}!</p>
             <button onClick={() => setShowPopup(true)}>Make a Request</button>
 
             {showPopup && (
